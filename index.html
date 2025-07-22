@@ -28,6 +28,90 @@
   <audio id="alarmAudio"   src="sounds/alarm.mp3"></audio>
   <audio id="skippedAudio" src="sounds/skipped.mp3"></audio>
 
-  <script type="module" src="patient.js"></script>
+  <!-- Firebase & App Logic -->
+  <script type="module">
+    // 1) Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, onValue, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // 2) Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfTE0aLnioPS1vKEMq96m5vxO9iqaxBYk",
+      authDomain: "smart-hospital-51bf4.firebaseapp.com",
+      databaseURL: "https://smart-hospital-51bf4-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "smart-hospital-51bf4",
+      storageBucket: "smart-hospital-51bf4.appspot.com",
+      messagingSenderId: "614166639876",
+      appId: "1:614166639876:web:e45d373639ba6edaa38c51"
+    };
+
+    // 3) Initialize
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // 4) Connectivity Test
+    async function testFirebase() {
+      try {
+        const dbRef = ref(db);
+        const snap  = await get(child(dbRef, 'token/test'));
+        if (snap.exists()) {
+          alert("✅ Firebase Connected! Test data found.");
+        } else {
+          alert("✅ Firebase Connected! No test data (that’s fine).");
+        }
+      } catch (e) {
+        alert("❌ Firebase NOT Connected: " + e.message);
+      }
+    }
+    testFirebase();
+
+    // 5) DOM Elements
+    const formDiv  = document.getElementById('form');
+    const userDiv  = document.getElementById('user-token');
+    const nameEl   = document.getElementById('name');
+    const phoneEl  = document.getElementById('phone');
+    const submitBtn= document.getElementById('submitBtn');
+    const myTok    = document.getElementById('myTokenDisplay');
+    const curTok   = document.getElementById('currentTokenDisplay');
+    const welcomeA = document.getElementById('welcomeAudio');
+    const alarmA   = document.getElementById('alarmAudio');
+    const skippedA = document.getElementById('skippedAudio');
+
+    let allTokens = [];
+
+    // Submit new patient
+    submitBtn.onclick = () => {
+      const name  = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      if (!name || !phone) return alert("Fill both fields!");
+
+      push(ref(db, 'token'), { name, phone, status: 'waiting' })
+        .then(() => {
+          welcomeA.play();
+          formDiv.style.display = 'none';
+          userDiv.style.display = 'block';
+        });
+    };
+
+    // Listen for token changes
+    onValue(ref(db, 'token'), snapshot => {
+      allTokens = [];
+      snapshot.forEach(child => {
+        allTokens.push({ key: child.key, ...child.val() });
+      });
+
+      // Show current token (first with status 'called')
+      const called = allTokens.find(t => t.status === 'called');
+      curTok.innerText = `Current Token: ${called ? called.phone : '-'}`;
+
+      // Show this user’s token if entered
+      const me = allTokens.find(t => t.phone === phoneEl.value.trim());
+      if (me) {
+        myTok.innerText = `Your Token: ${me.phone}`;
+        if (me.status === 'called') alarmA.play();
+        if (me.status === 'skipped') { skippedA.play(); myTok.innerText = 'Your token was skipped.'; }
+      }
+    });
+  </script>
 </body>
-</html>
+  </html>
