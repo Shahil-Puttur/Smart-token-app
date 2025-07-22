@@ -1,70 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Take Your Token</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; padding: 20px; text-align: center; }
-    input, button { padding: 10px; margin: 10px; font-size: 18px; width: 90%; max-width: 400px; }
-    .token-box { font-size: 22px; margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Token System</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h2>Take Your Token / ಟೋಕನ್ ಪಡೆಯಿರಿ</h2>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome / ಸ್ವಾಗತ</h1>
+            <p>Please enter your details to get a token.</p>
+        </div>
 
-  <input id="name" placeholder="Enter your name" />
-  <input id="phone" placeholder="Enter your phone number" />
-  <button onclick="getToken()">Get Token</button>
+        <!-- Section 1: Registration Form (Visible by default) -->
+        <div id="registration-section">
+            <form id="patient-form">
+                <div class="form-group">
+                    <label for="name">Full Name / ಪೂರ್ಣ ಹೆಸರು</label>
+                    <input type="text" id="name" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number / ಫೋನ್ ಸಂಖ್ಯೆ</label>
+                    <input type="tel" id="phone" placeholder="Enter 10-digit number" pattern="[0-9]{10}" required>
+                </div>
+                <button type="submit" class="btn">Get Token</button>
+            </form>
+        </div>
 
-  <div class="token-box" id="yourTokenBox"></div>
-  <div class="token-box" id="currentTokenBox"></div>
+        <!-- Section 2: Token Display (Hidden by default) -->
+        <div id="token-section" class="hidden">
+            <div class="token-display-section">
+                <div class="token-box">
+                    <h2>Your Token Number / ನಿಮ್ಮ ಟೋಕನ್ ಸಂಖ್ಯೆ</h2>
+                    <div id="your-token" class="token-number">-</div>
+                </div>
+                <div class="token-box">
+                    <h2>Current Token Being Served / ಪ್ರಸ್ತುತ ಸೇವೆ ಸಲ್ಲಿಸುತ್ತಿರುವ ಟೋಕನ್</h2>
+                    <div id="current-token" class="token-number">-</div>
+                </div>
+            </div>
+            <p class="instructions">Please be seated and wait for your turn.<br>ಕುಳಿತುಕೊಳ್ಳಿ ಹಾಗೂ ನಿಮ್ಮ ಸರದಿಗಾಗಿ ಕಾಯಿರಿ.</p>
+        </div>
+    </div>
 
-  <audio id="audioPlayer" controls hidden></audio>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
-  <script>
-    const firebaseConfig = {
-      databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com/"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let tokenNumber = 0;
-
-    function pad(num) {
-      return num.toString().padStart(3, '0');
-    }
-
-    function getToken() {
-      const name = document.getElementById("name").value;
-      const phone = document.getElementById("phone").value;
-
-      if (!name || !phone) return alert("Fill all fields");
-
-      db.ref("token").once("value", (snapshot) => {
-        const data = snapshot.val() || {};
-        const allTokens = Object.keys(data).filter(k => k !== "current");
-        const newTokenNum = pad(allTokens.length + 1);
-
-        db.ref("token/" + newTokenNum).set({ name, phone, status: "waiting" });
-        document.getElementById("yourTokenBox").innerHTML = `🎟️ Your Token: #${newTokenNum}`;
-        tokenNumber = newTokenNum;
-
-        // Listen for your turn
-        db.ref("token/current").on("value", (snap) => {
-          const current = snap.val() || "-";
-          document.getElementById("currentTokenBox").innerHTML = `🕐 Current Token: #${current}`;
-
-          if (current === tokenNumber) {
-            const audio = document.getElementById("audioPlayer");
-            audio.src = `/sounds/token_${tokenNumber}.mp3`;
-            audio.play();
-            alert("📢 It's your turn!");
-          }
-        });
-      });
-    }
-  </script>
+    <!-- Custom JS -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
