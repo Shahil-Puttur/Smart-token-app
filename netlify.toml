@@ -1,0 +1,5 @@
+# This rule makes it so you can access /staff instead of /staff.html
+[[redirects]]
+  from = "/staff"
+  to = "/staff.html"
+  status = 200 # 200 means it's a rewrite, not a redirect (URL stays clean)
