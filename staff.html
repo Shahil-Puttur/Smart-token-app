@@ -1,51 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Staff Panel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; padding: 20px; text-align: center; }
-    button { padding: 15px; font-size: 20px; background: green; color: white; border: none; margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - Token System</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h2>Staff Control Panel</h2>
-  <div id="currentToken">Current Token: #---</div>
-  <button onclick="nextToken()">Next</button>
-  <audio id="audioPlayer" controls hidden></audio>
+    <div class="container">
+        <div class="header">
+            <h1>Staff Dashboard</h1>
+            <p>Manage the patient queue.</p>
+        </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
-  <script>
-    const firebaseConfig = {
-      databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com/"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        <div class="staff-current-token">
+            <div class="token-box">
+                <h2>Currently Serving Token</h2>
+                <div id="current-token-display" class="token-number">-</div>
+            </div>
+        </div>
+        
+        <div class="staff-controls">
+             <button id="next-btn" class="btn btn-next">Call Next Patient</button>
+        </div>
 
-    let queue = [];
+        <h2 class="token-list-header">Waiting Patients</h2>
+        <ul id="waiting-list" class="token-list">
+           <!-- Patient items will be dynamically inserted here -->
+           <li id="no-patients-message" class="no-patients">No patients waiting.</li>
+        </ul>
+    </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database-compat.js"></script>
 
-    db.ref("token").on("value", (snapshot) => {
-      const data = snapshot.val() || {};
-      queue = Object.entries(data)
-        .filter(([k, v]) => k !== "current" && v.status === "waiting")
-        .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-
-      const current = data.current || "---";
-      document.getElementById("currentToken").innerText = `Current Token: #${current}`;
-    });
-
-    function nextToken() {
-      if (queue.length === 0) return alert("No patients in queue");
-
-      const [nextToken, info] = queue.shift();
-      db.ref("token/current").set(nextToken);
-      db.ref("token/" + nextToken + "/status").set("called");
-
-      const audio = document.getElementById("audioPlayer");
-      audio.src = `/sounds/token_${nextToken}.mp3`;
-      audio.play();
-    }
-  </script>
+    <!-- Custom JS -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/staff.js"></script>
 </body>
 </html>
