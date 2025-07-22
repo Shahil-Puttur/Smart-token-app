@@ -1,41 +1,100 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Firebase Test</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  </head>
-  <body>
-    <h1>Test Firebase Connection</h1>
-    <button onclick="sendTestData()">Send Test Data</button>
-    <p id="status"></p>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Hospital Queue - Patient</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f2f2f2;
+      text-align: center;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #tokenInfo {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Patient Token Registration</h2>
+  <input type="text" id="name" placeholder="Enter your name" />
+  <br />
+  <input type="text" id="phone" placeholder="Enter your phone number" />
+  <br />
+  <button onclick="registerToken()">Done</button>
 
-    <script>
-      // ✅ Your Firebase config (update with your exact values if changed)
-      const firebaseConfig = {
-        apiKey: "AIzaSyA63ZGGxxxxxxxxxxxxxxx",
-        authDomain: "smart-hospital-51bf4.firebaseapp.com",
-        databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com",
-        projectId: "smart-hospital-51bf4",
-        storageBucket: "smart-hospital-51bf4.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:xxxxxxxx"
+  <div id="tokenInfo"></div>
+
+  <!-- Audio Elements -->
+  <audio id="welcomeAudio" src="sounds/welcome.mp3"></audio>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // ✅ Firebase Config (Replace with yours if needed)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7u_0...your_key_here...",
+      authDomain: "smart-hospital-51bf4.firebaseapp.com",
+      databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com",
+      projectId: "smart-hospital-51bf4",
+      storageBucket: "smart-hospital-51bf4.appspot.com",
+      messagingSenderId: "308189131367",
+      appId: "1:308189131367:web:25f7e65a5fdf4cfbd1d2f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.registerToken = function () {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+
+      if (!name || !phone) {
+        alert("Please enter your name and phone number");
+        return;
+      }
+
+      const tokenRef = ref(db, 'token/');
+      const newTokenRef = push(tokenRef);
+
+      const newToken = {
+        name: name,
+        phone: phone,
+        status: "waiting",
+        timestamp: Date.now()
       };
 
-      // 🔥 Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
+      set(newTokenRef, newToken)
+        .then(() => {
+          document.getElementById("tokenInfo").innerText =
+            `✅ Welcome ${name}! Your token has been added. Please wait for your turn.`;
 
-      function sendTestData() {
-        const testRef = db.ref('test');
-        testRef.push({ time: new Date().toISOString() })
-          .then(() => {
-            document.getElementById('status').innerText = "✅ Firebase Connected & Data Sent";
-          })
-          .catch((error) => {
-            document.getElementById('status').innerText = "❌ Error: " + error.message;
-          });
-      }
-    </script>
-  </body>
+          document.getElementById("welcomeAudio").play(); // 🎵 Welcome Audio
+          document.getElementById("name").value = "";
+          document.getElementById("phone").value = "";
+        })
+        .catch((error) => {
+          alert("Error adding token: " + error.message);
+        });
+    };
+  </script>
+</body>
 </html>
