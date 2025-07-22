@@ -11,30 +11,31 @@
     <h1>🎟️ Take Your Token / ಟೋಕನ್ ಪಡೆಯಿರಿ</h1>
 
     <div id="form">
-      <input type="text" id="name" placeholder="Your Name / ನಿಮ್ಮ ಹೆಸರು" />
-      <input type="text" id="phone" placeholder="Phone Number / ಫೋನ್ ನಂಬರ್" />
-      <button id="submitBtn">Done (ಮುಗಿದಿದೆ)</button>
+      <input id="name" placeholder="Your Name / ನಿಮ್ಮ ಹೆಸರು" />
+      <input id="phone" placeholder="Phone Number / ಫೋನ್ ನಂಬರ್" />
+      <button id="submitBtn">Done (ಮುಗಿಯಿತು)</button>
     </div>
 
     <div id="user-token" style="display:none;">
       <h2 id="myTokenDisplay">Your Token: -</h2>
       <h2 id="currentTokenDisplay">Current Token: -</h2>
-      <p>👉 Sit and wait. / ಕುಳಿತುಕೊಳ್ಳಿ ಹಾಗೂ ಕಾಯಿರಿ.</p>
+      <p>👉 Sit and wait. / ಕುಳಿತುಕೊಳ್ಳಿ ಮತ್ತು ಕಾಯಿರಿ.</p>
     </div>
   </div>
 
-  <!-- Audio Alerts -->
+  <!-- Audio players -->
   <audio id="welcomeAudio" src="sounds/welcome.mp3"></audio>
   <audio id="alarmAudio"   src="sounds/alarm.mp3"></audio>
   <audio id="skippedAudio" src="sounds/skipped.mp3"></audio>
 
-  <!-- Firebase & App Logic -->
+  <!-- Firebase + app logic -->
   <script type="module">
-    // 1) Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, push, onValue, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import {
+      getDatabase, ref, push, onValue, get, child
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // 2) Your Firebase config
+    // your firebase-config.js could export these; inline here for simplicity
     const firebaseConfig = {
       apiKey: "AIzaSyAfTE0aLnioPS1vKEMq96m5vxO9iqaxBYk",
       authDomain: "smart-hospital-51bf4.firebaseapp.com",
@@ -45,15 +46,15 @@
       appId: "1:614166639876:web:e45d373639ba6edaa38c51"
     };
 
-    // 3) Initialize
     const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    const db = getDatabase(app);
+    const tokenRef = ref(db, 'token');
 
-    // 4) Connectivity Test
+    // 1. Connectivity test
     async function testFirebase() {
       try {
         const dbRef = ref(db);
-        const snap  = await get(child(dbRef, 'token/test'));
+        const snap = await get(child(dbRef, 'token/test'));
         if (snap.exists()) {
           alert("✅ Firebase Connected! Test data found.");
         } else {
@@ -65,27 +66,24 @@
     }
     testFirebase();
 
-    // 5) DOM Elements
-    const formDiv  = document.getElementById('form');
-    const userDiv  = document.getElementById('user-token');
-    const nameEl   = document.getElementById('name');
-    const phoneEl  = document.getElementById('phone');
-    const submitBtn= document.getElementById('submitBtn');
-    const myTok    = document.getElementById('myTokenDisplay');
-    const curTok   = document.getElementById('currentTokenDisplay');
-    const welcomeA = document.getElementById('welcomeAudio');
-    const alarmA   = document.getElementById('alarmAudio');
-    const skippedA = document.getElementById('skippedAudio');
+    // 2. Elements
+    const formDiv   = document.getElementById('form');
+    const userDiv   = document.getElementById('user-token');
+    const nameEl    = document.getElementById('name');
+    const phoneEl   = document.getElementById('phone');
+    const submitBtn = document.getElementById('submitBtn');
+    const myTok     = document.getElementById('myTokenDisplay');
+    const curTok    = document.getElementById('currentTokenDisplay');
+    const welcomeA  = document.getElementById('welcomeAudio');
+    const alarmA    = document.getElementById('alarmAudio');
+    const skippedA  = document.getElementById('skippedAudio');
 
-    let allTokens = [];
-
-    // Submit new patient
     submitBtn.onclick = () => {
       const name  = nameEl.value.trim();
       const phone = phoneEl.value.trim();
       if (!name || !phone) return alert("Fill both fields!");
 
-      push(ref(db, 'token'), { name, phone, status: 'waiting' })
+      push(tokenRef, { name, phone, status: 'waiting' })
         .then(() => {
           welcomeA.play();
           formDiv.style.display = 'none';
@@ -93,25 +91,24 @@
         });
     };
 
-    // Listen for token changes
-    onValue(ref(db, 'token'), snapshot => {
-      allTokens = [];
-      snapshot.forEach(child => {
-        allTokens.push({ key: child.key, ...child.val() });
-      });
-
-      // Show current token (first with status 'called')
-      const called = allTokens.find(t => t.status === 'called');
+    // 3. Listen for changes
+    onValue(tokenRef, snapshot => {
+      const all = [];
+      snapshot.forEach(c => all.push({ key: c.key, ...c.val() }));
+      // current = first status='called'
+      const called = all.find(t => t.status==='called');
       curTok.innerText = `Current Token: ${called ? called.phone : '-'}`;
-
-      // Show this user’s token if entered
-      const me = allTokens.find(t => t.phone === phoneEl.value.trim());
+      // my token display
+      const me = all.find(t => t.phone===phoneEl.value.trim());
       if (me) {
         myTok.innerText = `Your Token: ${me.phone}`;
-        if (me.status === 'called') alarmA.play();
-        if (me.status === 'skipped') { skippedA.play(); myTok.innerText = 'Your token was skipped.'; }
+        if (me.status==='called') alarmA.play();
+        if (me.status==='skipped') {
+          skippedA.play();
+          myTok.innerText = 'Your token was skipped.';
+        }
       }
     });
   </script>
 </body>
-  </html>
+</html>
