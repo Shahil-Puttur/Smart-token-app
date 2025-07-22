@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Staff Panel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>👨‍⚕️ Staff Panel / ಸಿಬ್ಬಂದಿ ಪ್ಯಾನೆಲ್</h1>
+    <div class="buttons">
+      <button id="nextBtn">Next Patient (ಮುಂದಿನ)</button>
+      <button id="skipBtn">Skip Patient (ಬಿಡು)</button>
+    </div>
+    <h2 id="currentPatient">Current: -</h2>
+  </div>
+
+  <!-- Audio Alerts -->
+  <audio id="alarmAudio"   src="sounds/alarm.mp3"></audio>
+  <audio id="skippedAudio" src="sounds/skipped.mp3"></audio>
+
+  <script type="module" src="staff.js"></script>
+</body>
+</html>
