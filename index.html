@@ -2,55 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smart Hospital Queue - Patient</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Patient Token</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 30px;
-      background-color: #f2f2f2;
-      text-align: center;
-    }
-    input {
-      padding: 10px;
-      margin: 10px;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    #tokenInfo {
-      margin-top: 30px;
-      font-size: 20px;
-      font-weight: bold;
-    }
+    body { font-family:sans-serif; text-align:center; padding:20px; }
+    input { width:80%; padding:10px; margin:5px 0; }
+    button { padding:10px 20px; font-size:16px; }
+    #info { margin-top:30px; font-size:18px; }
   </style>
 </head>
 <body>
-  <h2>Patient Token Registration</h2>
-  <input type="text" id="name" placeholder="Enter your name" />
-  <br />
-  <input type="text" id="phone" placeholder="Enter your phone number" />
-  <br />
-  <button onclick="registerToken()">Done</button>
+  <h2>Take Your Token / ಟೋಕನ್ ಪಡೆಯಿರಿ</h2>
+  <div id="form">
+    <input id="name"  placeholder="Your Name / ನಿಮ್ಮ ಹೆಸರು" /><br/>
+    <input id="phone" placeholder="Phone Number / ಫೋನ್ ನಂಬರ್" /><br/>
+    <button id="submitBtn">Done / ಮುಗಿದಿದೆ</button>
+  </div>
 
-  <div id="tokenInfo"></div>
+  <div id="info" style="display:none;">
+    <p id="myToken">Your Token: -</p>
+    <p id="currentToken">Current Token: -</p>
+    <p>👉 Sit and wait. / ಕುಳಿತುಕೊಳ್ಳಿ ಹಾಗೂ ಕಾಯಿರಿ.</p>
+  </div>
 
-  <!-- Audio Elements -->
   <audio id="welcomeAudio" src="sounds/welcome.mp3"></audio>
 
   <!-- Firebase SDK -->
-  <script type="module">
-    // ✅ Firebase Config (Replace with yours if needed)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-    const firebaseConfig = {
+  <script>
+    // 1) Init Firebase
+    const cfg = {
       apiKey: "AIzaSyD7u_0...your_key_here...",
       authDomain: "smart-hospital-51bf4.firebaseapp.com",
       databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com",
@@ -59,42 +42,54 @@
       messagingSenderId: "308189131367",
       appId: "1:308189131367:web:25f7e65a5fdf4cfbd1d2f3"
     };
+    firebase.initializeApp(cfg);
+    const db = firebase.database();
+    const tokRef = db.ref('token');
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    window.registerToken = function () {
-      const name = document.getElementById("name").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-
+    // 2) On submit, push and show info
+    document.getElementById('submitBtn').onclick = () => {
+      const name  = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
       if (!name || !phone) {
-        alert("Please enter your name and phone number");
-        return;
+        return alert('Please enter both name & phone!');
       }
-
-      const tokenRef = ref(db, 'token/');
-      const newTokenRef = push(tokenRef);
-
-      const newToken = {
-        name: name,
-        phone: phone,
-        status: "waiting",
-        timestamp: Date.now()
-      };
-
-      set(newTokenRef, newToken)
+      // push
+      tokRef.push({ name, phone, status:'waiting', time: Date.now() })
         .then(() => {
-          document.getElementById("tokenInfo").innerText =
-            `✅ Welcome ${name}! Your token has been added. Please wait for your turn.`;
-
-          document.getElementById("welcomeAudio").play(); // 🎵 Welcome Audio
-          document.getElementById("name").value = "";
-          document.getElementById("phone").value = "";
+          document.getElementById('form').style.display = 'none';
+          document.getElementById('info').style.display = 'block';
+          document.getElementById('welcomeAudio').play();
         })
-        .catch((error) => {
-          alert("Error adding token: " + error.message);
-        });
+        .catch(e => alert('Error: '+e.message));
     };
+
+    // 3) Listen & update tokens every 5s
+    function refresh() {
+      tokRef.once('value', snap => {
+        const data = snap.val() || {};
+        const list = Object.values(data);
+        // find first called, else list[0]? but we’ll call via staff page
+        const qAll = Object.entries(data);
+        // Show currentToken
+        const called = qAll.find(([k,v]) => v.status==='called');
+        document.getElementById('currentToken').innerText =
+          'Current Token: ' + (called ? called[1].name : '-');
+        // Show myToken
+        const phone = document.getElementById('phone').value.trim();
+        if (phone) {
+          const waiting = qAll.filter(([k,v]) => v.status==='waiting');
+          const meIndex = waiting.findIndex(([k,v]) => v.phone === phone);
+          if (meIndex > -1) {
+            document.getElementById('myToken').innerText =
+              'Your Token: ' + waiting[meIndex][1].name;
+          }
+        }
+      });
+    }
+
+    setInterval(refresh, 5000);
+    // also refresh immediately after submit
+    tokRef.on('child_changed', refresh);
   </script>
 </body>
 </html>
