@@ -1,107 +1,123 @@
+// js/staff.js
+
 document.addEventListener('DOMContentLoaded', () => {
-    const currentTokenDisplay = document.getElementById('current-token-display');
-    const waitingListEl = document.getElementById('waiting-list');
-    const nextBtn = document.getElementById('next-btn');
-    const noPatientsMessage = document.getElementById('no-patients-message');
+  const currentTokenDisplay = document.getElementById('current-token-display');
+  const waitingListEl = document.getElementById('waiting-list');
+  const nextBtn = document.getElementById('next-btn');
+  const noPatientsMessage = document.getElementById('no-patients-message');
 
-    const countersRef = database.ref('counters');
-    const tokensRef = database.ref('tokens');
-    let waitingPatients = []; // Local cache of waiting patients
+  const countersRef = database.ref('counters');
+  const tokensRef = database.ref('tokens');
 
-    // Helper function to play audio
-    const playAudio = (src) => {
-        const audio = new Audio(src);
-        audio.play().catch(error => console.error("Audio playback failed:", error));
-    };
+  // Prepare audios once on load
+  const alarmAudio = new Audio('sounds/alarm.mp3');
+  alarmAudio.preload = 'auto';
 
-    // --- Real-time Listeners ---
+  const skippedAudio = new Audio('sounds/skipped.mp3');
+  skippedAudio.preload = 'auto';
 
-    // 1. Listen for changes to the current token
-    countersRef.child('currentToken').on('value', (snapshot) => {
-        currentTokenDisplay.textContent = snapshot.val() || '–';
+  // Update current token display in real-time
+  countersRef.child('currentToken').on('value', snapshot => {
+    const current = snapshot.val() || '–';
+    currentTokenDisplay.textContent = current;
+  });
+
+  // Listen for all waiting patients
+  tokensRef.orderByChild('status').equalTo('waiting').on('value', snapshot => {
+    waitingListEl.innerHTML = '';
+    if (!snapshot.exists()) {
+      noPatientsMessage.classList.remove('hidden');
+      noPatientsMessage.textContent = "No patients waiting.";
+      return;
+    }
+    noPatientsMessage.classList.add('hidden');
+
+    // Sort patients by tokenNumber ascending
+    const waitingPatients = [];
+    snapshot.forEach(child => {
+      waitingPatients.push({ key: child.key, ...child.val() });
+    });
+    waitingPatients.sort((a, b) => a.tokenNumber - b.tokenNumber);
+
+    waitingPatients.forEach(patient => {
+      const li = document.createElement('li');
+      li.classList.add('token-item');
+      li.dataset.key = patient.key;
+
+      li.innerHTML = `
+        <div class="token-item-info">
+          <span class="token-item-number">${patient.tokenNumber}</span>
+          <div class="token-item-details">
+            <strong>${patient.name}</strong><br>
+            <span>Phone: ${patient.phone}</span>
+          </div>
+        </div>
+        <div class="token-item-actions">
+          <button class="btn btn-skip" data-token-number="${patient.tokenNumber}">Skip</button>
+        </div>`;
+
+      waitingListEl.appendChild(li);
     });
 
-    // 2. Listen for waiting patients (ordered by token number)
-    tokensRef.orderByChild('status').equalTo('waiting').on('value', (snapshot) => {
-        waitingListEl.innerHTML = ''; // Clear the list first
-        waitingPatients = [];
-        
-        if (snapshot.exists()) {
-            snapshot.forEach(childSnapshot => {
-                // Firebase returns in order, so push to array
-                waitingPatients.push({ key: childSnapshot.key, ...childSnapshot.val() });
-            });
-            noPatientsMessage.classList.add('hidden');
-            renderWaitingList();
-        } else {
-            waitingListEl.appendChild(noPatientsMessage);
-            noPatientsMessage.classList.remove('hidden');
-        }
-
-        // Enable/disable button based on queue
-        nextBtn.disabled = waitingPatients.length === 0;
+    // Attach Skip button event listener
+    document.querySelectorAll('.btn-skip').forEach(button => {
+      button.onclick = handleSkip;
     });
+  });
 
-    // --- UI Rendering ---
+  // "Next" button click handler
+  nextBtn.addEventListener('click', () => {
+    // Get the first waiting patient (lowest token number)
+    tokensRef.orderByChild('status').equalTo('waiting').limitToFirst(1).once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        alert('No patients are waiting!');
+        return;
+      }
 
-    const renderWaitingList = () => {
-        waitingPatients.forEach(patient => {
-            const li = document.createElement('li');
-            li.className = 'token-item';
-            li.dataset.key = patient.key;
+      let nextPatientKey = null;
+      let nextTokenNumber = null;
+      snapshot.forEach(child => {
+        nextPatientKey = child.key;
+        nextTokenNumber = child.val().tokenNumber;
+      });
 
-            li.innerHTML = `
-                <div class="token-item-info">
-                    <span class="token-item-number">${patient.tokenNumber}</span>
-                    <div class="token-item-details">
-                        <strong>${patient.name}</strong><br>
-                        <span>Phone: ${patient.phone}</span>
-                    </div>
-                </div>
-                <div class="token-item-actions">
-                    <button class="btn-skip" data-token-number="${patient.tokenNumber}">Skip</button>
-                </div>
-            `;
-            waitingListEl.appendChild(li);
-        });
+      if (!nextPatientKey) {
+        alert('No patients are waiting!');
+        return;
+      }
 
-        // Add event listener for the new "Skip" buttons
-        document.querySelectorAll('.btn-skip').forEach(button => {
-            button.addEventListener('click', handleSkip);
-        });
-    };
+      // Update the token status to "called"
+      const updates = {};
+      updates[`tokens/${nextPatientKey}/status`] = 'called';
+      updates[`counters/currentToken`] = nextTokenNumber;
 
-    // --- Event Handlers ---
-
-    // "Call Next" button click
-    nextBtn.addEventListener('click', () => {
-        if (waitingPatients.length === 0) {
-            alert('No patients are waiting.');
-            return;
-        }
-
-        const nextPatient = waitingPatients[0]; // The first patient in the sorted list
-        const updates = {};
-        updates[`/tokens/${nextPatient.key}/status`] = 'called';
-        updates[`/counters/currentToken`] = nextPatient.tokenNumber;
-
-        database.ref().update(updates)
-            .then(() => {
-                playAudio('sounds/alarm.mp3');
-            })
-            .catch(err => console.error("Failed to call next patient:", err));
+      database.ref().update(updates).then(() => {
+        alarmAudio.play().catch(err => console.warn('Alarm audio playback failed:', err));
+      }).catch(err => {
+        alert('Failed to update token status.');
+        console.error('Update error:', err);
+      });
     });
+  });
 
-    // "Skip" button click (uses event delegation concept)
-    const handleSkip = (e) => {
-        const tokenNumberToSkip = e.target.dataset.tokenNumber;
-        const updates = {};
-        updates[`/tokens/${tokenNumberToSkip}/status`] = 'skipped';
-        
-        database.ref().update(updates)
-             .then(() => {
-                playAudio('sounds/skipped.mp3');
-             })
-             .catch(err => console.error("Failed to skip patient:", err));
-    };
+  // Skip button handler
+  function handleSkip(e) {
+    const tokenNum = e.target.getAttribute('data-token-number');
+    if (!tokenNum) return;
+
+    // Find patient key by token number
+    tokensRef.orderByChild('tokenNumber').equalTo(+tokenNum).once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const key = child.key;
+        tokensRef.child(key).update({ status: 'skipped' })
+          .then(() => {
+            skippedAudio.play().catch(err => console.warn('Skipped audio playback failed:', err));
+          })
+          .catch(err => {
+            alert('Failed to skip patient.');
+            console.error('Skip error:', err);
+          });
+      });
+    });
+  }
 });
