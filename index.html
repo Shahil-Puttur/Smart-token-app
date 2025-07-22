@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Patient Token</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎟️ Take Your Token / ಟೋಕನ್ ಪಡೆಯಿರಿ</h1>
+
+    <div id="form">
+      <input type="text" id="name" placeholder="Your Name / ನಿಮ್ಮ ಹೆಸರು" />
+      <input type="text" id="phone" placeholder="Phone Number / ಫೋನ್ ನಂಬರ್" />
+      <button id="submitBtn">Done (ಮುಗಿದಿದೆ)</button>
+    </div>
+
+    <div id="user-token" style="display:none;">
+      <h2 id="myTokenDisplay">Your Token: -</h2>
+      <h2 id="currentTokenDisplay">Current Token: -</h2>
+      <p>👉 Sit and wait. / ಕುಳಿತುಕೊಳ್ಳಿ ಹಾಗೂ ಕಾಯಿರಿ.</p>
+    </div>
+  </div>
+
+  <!-- Audio Alerts -->
+  <audio id="welcomeAudio" src="sounds/welcome.mp3"></audio>
+  <audio id="alarmAudio"   src="sounds/alarm.mp3"></audio>
+  <audio id="skippedAudio" src="sounds/skipped.mp3"></audio>
+
+  <script type="module" src="patient.js"></script>
+</body>
+</html>
