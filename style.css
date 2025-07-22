@@ -1,39 +1,219 @@
-/* style.css */
+/* Using Google Fonts for a modern look */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #005A9C; /* Professional blue */
+    --secondary-color: #00B9F1;
+    --background-color: #f4f7f6;
+    --text-color: #333;
+    --light-gray: #e9ecef;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+}
+
+/* Basic Reset & Body Styles */
 body {
-  font-family: sans-serif;
-  background: #f7f7f7;
-  margin: 0;
-  padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
 }
+
 .container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  text-align: center;
+    width: 100%;
+    max-width: 600px;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    margin-top: 2rem;
 }
-input, button {
-  width: 100%;
-  margin: 8px 0;
-  padding: 12px;
-  font-size: 16px;
+
+/* Header */
+.header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--light-gray);
+    padding-bottom: 1rem;
 }
-button {
-  background: #1e88e5;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+
+.header h1 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin: 0;
 }
-button:hover {
-  background: #1669bb;
+
+.header p {
+    color: #6c757d;
+    margin-top: 0.25rem;
 }
-h1, h2 {
-  margin: 12px 0;
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
 }
-.buttons button {
-  width: 48%;
-  display: inline-block;
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 90, 156, 0.2);
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 90, 156, 0.3);
+}
+
+/* Token Display */
+.token-display-section, .staff-current-token {
+    padding: 1.5rem;
+    background-color: var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.token-box {
+    margin: 1rem 0;
+}
+
+.token-box h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: #495057;
+}
+
+.token-number {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.instructions {
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Staff Page Specifics */
+.staff-controls {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-next { background: linear-gradient(45deg, var(--success-color), #20c997); }
+.btn-next:hover { box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); }
+
+.token-list-header {
+    text-align: left;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem 0;
+    color: var(--primary-color);
+}
+
+.token-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+.token-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    transition: background-color 0.2s;
+}
+
+.token-item:first-child {
+    background-color: #e8f5e9; /* Highlight the next person */
+    border-color: var(--success-color);
+}
+
+.token-item-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.token-item-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    width: 50px;
+    text-align: center;
+}
+
+.token-item-details strong {
+    font-size: 1.1rem;
+}
+
+.token-item-details span {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.token-item-actions button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    color: #fff;
+    font-weight: 500;
+}
+
+.btn-skip { background-color: var(--danger-color); }
+.no-patients { color: #6c757d; font-style: italic; margin-top: 1rem; }
+
+/* Utility */
+.hidden {
+    display: none;
 }
