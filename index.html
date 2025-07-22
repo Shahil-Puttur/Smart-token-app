@@ -1,95 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Patient Token</title>
+  <title>Take Your Token</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family:sans-serif; text-align:center; padding:20px; }
-    input { width:80%; padding:10px; margin:5px 0; }
-    button { padding:10px 20px; font-size:16px; }
-    #info { margin-top:30px; font-size:18px; }
+    body { font-family: sans-serif; padding: 20px; text-align: center; }
+    input, button { padding: 10px; margin: 10px; font-size: 18px; width: 90%; max-width: 400px; }
+    .token-box { font-size: 22px; margin-top: 20px; }
   </style>
 </head>
 <body>
   <h2>Take Your Token / ಟೋಕನ್ ಪಡೆಯಿರಿ</h2>
-  <div id="form">
-    <input id="name"  placeholder="Your Name / ನಿಮ್ಮ ಹೆಸರು" /><br/>
-    <input id="phone" placeholder="Phone Number / ಫೋನ್ ನಂಬರ್" /><br/>
-    <button id="submitBtn">Done / ಮುಗಿದಿದೆ</button>
-  </div>
 
-  <div id="info" style="display:none;">
-    <p id="myToken">Your Token: -</p>
-    <p id="currentToken">Current Token: -</p>
-    <p>👉 Sit and wait. / ಕುಳಿತುಕೊಳ್ಳಿ ಹಾಗೂ ಕಾಯಿರಿ.</p>
-  </div>
+  <input id="name" placeholder="Enter your name" />
+  <input id="phone" placeholder="Enter your phone number" />
+  <button onclick="getToken()">Get Token</button>
 
-  <audio id="welcomeAudio" src="sounds/welcome.mp3"></audio>
+  <div class="token-box" id="yourTokenBox"></div>
+  <div class="token-box" id="currentTokenBox"></div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <audio id="audioPlayer" controls hidden></audio>
 
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
   <script>
-    // 1) Init Firebase
-    const cfg = {
-      apiKey: "AIzaSyD7u_0...your_key_here...",
-      authDomain: "smart-hospital-51bf4.firebaseapp.com",
-      databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com",
-      projectId: "smart-hospital-51bf4",
-      storageBucket: "smart-hospital-51bf4.appspot.com",
-      messagingSenderId: "308189131367",
-      appId: "1:308189131367:web:25f7e65a5fdf4cfbd1d2f3"
+    const firebaseConfig = {
+      databaseURL: "https://smart-hospital-51bf4-default-rtdb.firebaseio.com/"
     };
-    firebase.initializeApp(cfg);
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const tokRef = db.ref('token');
 
-    // 2) On submit, push and show info
-    document.getElementById('submitBtn').onclick = () => {
-      const name  = document.getElementById('name').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      if (!name || !phone) {
-        return alert('Please enter both name & phone!');
-      }
-      // push
-      tokRef.push({ name, phone, status:'waiting', time: Date.now() })
-        .then(() => {
-          document.getElementById('form').style.display = 'none';
-          document.getElementById('info').style.display = 'block';
-          document.getElementById('welcomeAudio').play();
-        })
-        .catch(e => alert('Error: '+e.message));
-    };
+    let tokenNumber = 0;
 
-    // 3) Listen & update tokens every 5s
-    function refresh() {
-      tokRef.once('value', snap => {
-        const data = snap.val() || {};
-        const list = Object.values(data);
-        // find first called, else list[0]? but we’ll call via staff page
-        const qAll = Object.entries(data);
-        // Show currentToken
-        const called = qAll.find(([k,v]) => v.status==='called');
-        document.getElementById('currentToken').innerText =
-          'Current Token: ' + (called ? called[1].name : '-');
-        // Show myToken
-        const phone = document.getElementById('phone').value.trim();
-        if (phone) {
-          const waiting = qAll.filter(([k,v]) => v.status==='waiting');
-          const meIndex = waiting.findIndex(([k,v]) => v.phone === phone);
-          if (meIndex > -1) {
-            document.getElementById('myToken').innerText =
-              'Your Token: ' + waiting[meIndex][1].name;
-          }
-        }
-      });
+    function pad(num) {
+      return num.toString().padStart(3, '0');
     }
 
-    setInterval(refresh, 5000);
-    // also refresh immediately after submit
-    tokRef.on('child_changed', refresh);
+    function getToken() {
+      const name = document.getElementById("name").value;
+      const phone = document.getElementById("phone").value;
+
+      if (!name || !phone) return alert("Fill all fields");
+
+      db.ref("token").once("value", (snapshot) => {
+        const data = snapshot.val() || {};
+        const allTokens = Object.keys(data).filter(k => k !== "current");
+        const newTokenNum = pad(allTokens.length + 1);
+
+        db.ref("token/" + newTokenNum).set({ name, phone, status: "waiting" });
+        document.getElementById("yourTokenBox").innerHTML = `🎟️ Your Token: #${newTokenNum}`;
+        tokenNumber = newTokenNum;
+
+        // Listen for your turn
+        db.ref("token/current").on("value", (snap) => {
+          const current = snap.val() || "-";
+          document.getElementById("currentTokenBox").innerHTML = `🕐 Current Token: #${current}`;
+
+          if (current === tokenNumber) {
+            const audio = document.getElementById("audioPlayer");
+            audio.src = `/sounds/token_${tokenNumber}.mp3`;
+            audio.play();
+            alert("📢 It's your turn!");
+          }
+        });
+      });
+    }
   </script>
 </body>
 </html>
